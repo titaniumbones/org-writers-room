@@ -43,4 +43,4 @@ Most of the features I want are not yet implemented!  Here are some plans/aspira
 - Eventually, it would be nice to have some kind of a search interface that makes it easy to find stuff you've lost track of; I guess one could just use C-s for now.
 - In general, the code right now is quite fragile and I think of pretty poor quality.  It should be made, well, better.  
 ** Contributing
-Please, please, please take this code and improve it.  If you're interested in contributing, please fork & push or consider asking for commit access.  I'm not a coder! I just want to be able to use org-mode for everything.  
+Please, please, please take this code and improve it.  If you're interested in contributing, please fork & push or consider asking for commit access.  I'm not a coder! I just want to be able to use org-mode for everything.   
