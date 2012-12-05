@@ -1,0 +1,46 @@
+* Org Writer's Room
+Inspired by [[http://www.literatureandlatte.com/scrivener.php][Scrivener]], this experimental, unfinished minor mode hopes to eventually provide an environment in which writers can easily manage large-scale projects (like novels and dissertations) while still living in Emacs & writing in plain-text with [[http://orgmode.org][Org]].  
+
+Eventually, I hope to have a three-column interface with a collapsed outline on the left-hand side, an indirect buffer containing the current node in the main window, and editable metadata on the right.  right now, though, all the mode does is set up the window structure approximately the way I want it and remap C-c C-x b to a new function that forces all indirect buffers to display in the main, center window.  
+
+This is broken software -- you shouldn't expect it to do what it's supposed to do yet - -but if you want to help develop it please download it and hack away! My elisp skills aren't relaly up to the task.  Thank you!
+** Requirements
+- Emacs 24
+- a recent org-mode
+
+** Installation
+Put org-writers-room.el somewhere in your load-path and load it.
+
+** Usage
+For now, it's assumed that each project lives in just one single file, that might be structured e.g.:
+- Novel
+  - Ch1: Dark & Stormy Night
+    - Dave watches rain in nursery
+    - Stan approaches from outside
+    - The confrontation
+  - Ch2: Bright & Shiny Day
+  - Ch3: A Glorious Dawn
+  - Ch4: A chilling dusk
+  - Ch5: Midnight
+- Notes
+  - Characters
+    - Dave
+    - Joanne
+  - Thoughts on Mood
+    - Pathetic Fallacies
+    - why is Dave sad?
+Use regular org-mode commands to move bits of the structure around in the guide.  When you actually want to write, use C-c C-x b on a headline to get that node in the main window.  
+
+** Stuff I want to be able to do!
+Most of the features I want are not yet implemented!  Here are some plans/aspirations I have for this mode:
+- change the visibility cycling in the "guide" buffer so that it's impossible to make node content visible there  cycling should just affect the number of sub-headings visible in a given node.
+- consider suppressing display of  headline tags in the guide, to make view cleaner.  Or just shorten headline text so they never wrap.
+- Somehow make it easy to assign a set of Properties to each headline.  For instance, if this is going to work like Scrivener, each node should have a "Synopsis" property containing a short summary of the node.  It would be great if e.g. every time I created a node in "Novel" a Properties list was automatically created containing drawers for
+  - synopsis
+  - characters
+  - umm, I thought there would be more but I can't think of them.  If it were an academic monograph instead of a novel, you might have quite a number of properties to keep track of.  
+- Implement the metadata window!  I imagine this containing an editor for the properties in the current node; I guess it's an indirect buffer narrowed even further than the indirect buffer in the main window  It would be nice if the property keys could be pre-populated according to a defcustom or a declaration in a headline.
+- Eventually, it would be nice to have some kind of a search interface that makes it easy to find stuff you've lost track of; I guess one could just use C-s for now.
+- In general, the code right now is quite fragile and I think of pretty poor quality.  It should be made, well, better.  
+** Contributing
+Please, please, please take this code and improve it.  If you're interested in contributing, please fork & push or consider asking for commit access.  I'm not a coder! I just want to be able to use org-mode for everything.  
