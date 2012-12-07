@@ -1,3 +1,7 @@
+(require 'speedbar)
+(speedbar-add-supported-extension ".org")
+(require 'org-toc)
+
 (defgroup org-writers-room nil
   "Book & project-writing setup for org-mode"
   :group 'org-writers-room)
