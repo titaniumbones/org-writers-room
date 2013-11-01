@@ -41,19 +41,26 @@ Interactively with no argument, this command toggles the mode.
 ;; narrow the buffer automatically to the properties drawer
 (add-hook 'org-wr-meta-hooks 'org-wr-meta-narrow)
 
-
 (defun org-wr-meta-narrow ()
   "really just a hook to narrow the buffer to the properties drawer of the active heading"
   (interactive)
+  (setq pbegin nil)
   (save-excursion
     (org-back-to-heading t)
-    (search-forward-regexp  ":PROPERTIES:")
-    (setq beg (point))
+    (setq pbegin (search-forward-regexp ":PROPERTIES:" nil 1)))
+  (unless pbegin
+    (org-wr-main-heading-hook)
+    (save-excursion 
+      (org-back-to-heading t)
+      ;; (org-wr-meta-narrow)
+      (setq pbegin (search-forward-regexp ":PROPERTIES:" nil 1))
+      ))
+  (save-excursion
+    (org-back-to-heading t)
     (search-forward-regexp ":END:")
-    (setq end (match-beginning 0))
-    (narrow-to-region beg end)
-    (show-all)
-    )
+    (setq end (match-beginning 0)))
+  (narrow-to-region pbegin end)
+  (show-all)
   )
 
 
