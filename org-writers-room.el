@@ -84,32 +84,78 @@ window.  could be useful for sustaining concentration, but I'm not sure I want t
 
 ;; (global-set-key [pause] 'toggle-current-window-dedication)
 
+;; helper function to hide all drawers in guide-mode
 
+(defun org-hide-drawers ()
+  "Fold all drawers in buffer"
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (while (re-search-forward org-property-start-re nil 'NOERROR)
+      (org-flag-drawer t)))
+  )
 
 
 (defun org-writers-room-windows ()
   "Trying to figure out how to get a nice windows config for a writers room mode. Uses the window-naming funtions defined above."
   (interactive "")
-  (setq width org-writers-room-column-width)
-  (global-linum-mode 0)
-  (delete-other-windows)
-  (set-window-dedicated-p (selected-window) t)
-  (let* ((main (split-window nil width t))
-         (metadata (split-window main (- width) t)))
-    (set-window-name (selected-window) "guide")
-    (set-window-name main "main")
-    (set-window-name metadata "metadata"))
-  (select-window (window-with-name "main"))
-  (setq my-buffer-name-regex (concat (buffer-name) "-") )
-  (org-writers-room-tree-to-indirect-buffer)
+  (if org-writers-room-on
+      ;; the "then" part...
+      (progn
+	(setq org-wr-last-meta-buffer nil)
+	(setq width org-writers-room-column-width)
+	(global-linum-mode 0)
+	(delete-other-windows)
+	(set-window-dedicated-p (selected-window) t)
+	(let* ((main (split-window nil width t))
+	       (metadata (split-window main (- width) t)))
+	  (set-window-name (selected-window) "guide")
+	  (set-window-name main "main")
+	  (set-window-name metadata "metadata"))
+	(select-window (window-with-name "main"))
+	(setq my-buffer-name-regex (concat (buffer-name) "-") )
+	(org-writers-room-tree-to-indirect-buffer))
+    ;; the "else" part..
+      (let ((realpoint nil)
+	    (origbuf (current-buffer)))
+	(if (or (eq origbuf org-last-indirect-buffer)
+		(eq origbuf org-wr-last-meta-buffer))
+	    (setq realpoint (point)))
+	  (select-window (window-with-name "guide"))
+	  (delete-other-windows (selected-window))
+	  (set-window-dedicated-p (selected-window) nil)
+	  ;; (pop-to-buffer org-wr-guide-buffer)
+	  (if realpoint
+	      (goto-char realpoint))
+      (if (eq origbuf org-wr-last-meta-buffer)
+	  (org-wr-kill-indirects)
+	(if (buffer-live-p org-wr-last-meta-buffer)
+	    (kill-buffer  org-wr-last-meta-buffer))
+	(if (and (buffer-live-p org-last-indirect-buffer))
+	    (kill-buffer org-last-indirect-buffer))
+	)))
 )
+(defun org-wr-kill-indirects ()
+  (if (and (buffer-live-p org-last-indirect-buffer))
+      (kill-buffer org-last-indirect-buffer))
+  (if (buffer-live-p org-wr-last-meta-buffer)
+      (kill-buffer  org-wr-last-meta-buffer))
+)	
+	  
+	    
+	     ;; grab the buffer location
+      ;; go to guide window
+      ;; kill the indirect buffers
+      ;; destroy the old windows
+      ;; unlock the current window from this buffer
+      ;; ))
+;; )
 
 
 ;; set the hooks up
 ;; for some reason this hook seems to be called when the mode istoggled off, too!  
 ;; not sure why that would be.  
 (setq org-writers-room-hooks nil)
-(add-hook 'org-writers-room-hooks 'org-writers-room-windows)
 
 ;; -- BEGIN org-wr-main
 ;; Trivial minor mode to display a an org node in the main window of writers-mode
@@ -141,7 +187,7 @@ Interactively with no argument, this command toggles the mode.
 ;; would also be nice to completely hid the properties drawer after it's created
 ;; cf hide-show-mode solution here: http://stackoverflow.com/questions/17478260/completely-hide-the-properties-drawer-in-org-mode
 
-;; save 
+;; 
 (defun org-wr-main-heading-hook ()
   "Adds a properties drawer & populates it with several properties.  Intended to be used with org-insert-heading-hook, but is also interactive."
   (interactive)
@@ -153,8 +199,13 @@ Interactively with no argument, this command toggles the mode.
 (defun org-wr-main-property-fns ()
   "adds a hook to org-insert-heading-hook that automatically adds property drawers whenever a heading is created"
   (interactive)
-  (make-local-variable 'org-insert-heading-hook)
-  (add-to-list 'org-insert-heading-hook 'org-wr-main-heading-hook)
+  (if org-wr-main
+      (progn
+	(make-local-variable 'org-insert-heading-hook)
+	(add-to-list 'org-insert-heading-hook 'org-wr-main-heading-hook))
+    (progn
+      (remove-hook 'org-insert-heading-hook 'org-wr-main-heading-hook))      
+  )
   )
 
 (add-hook 'org-wr-main-hooks 'org-wr-main-property-fns)
@@ -187,8 +238,8 @@ Interactively with no argument, this command toggles the mode.
   (run-hooks 'org-wr-guide-hooks 
 	     )
   )
-
 (define-key org-wr-guide-map (kbd "<return>") 'org-writers-room-tree-to-indirect-buffer) 
+(add-hook 'org-wr-guide 'org-writers-room-windows)
 ;; (add-hook 'org-wr-guide-hooks 'org-wr-side-narrow)
 
 
@@ -289,28 +340,36 @@ Org options to go up and down levels are not available, nor are options to displ
 
 
 ;; --- BEGIN org-writers-room mode
-(define-minor-mode org-writers-room 
-  "Toggle Writer's Room Mode.  
-Interactively with no argument, this command toggles the mode.
-     A positive prefix argument enables the mode, any other prefix
-     argument disables it.  From Lisp, argument omitted or nil enables
-     the mode, `toggle' toggles the state."
-  ;; initial value
-  :init-value nil
-  ;;
-  ;; The indicator for the mode line.
-  :lighter "WriRo"
-  ;; minor mode keybindings
-  :keymap 
-  '(([?\C-c ?\C-x ?b] . org-writers-room-tree-to-indirect-buffer)
-    )
-  ;; 
-  :group "org-writers-room"
-  :global nil
-  (run-hooks 'org-writers-room-hooks )
-  )
+;; (define-minor-mode org-writers-room 
+;;   "Toggle Writer's Room Mode.  
+;; Interactively with no argument, this command toggles the mode.
+;;      A positive prefix argument enables the mode, any other prefix
+;;      argument disables it.  From Lisp, argument omitted or nil enables
+;;      the mode, `toggle' toggles the state."
+;;   ;; initial value
+;;   :init-value nil
+;;   ;;
+;;   ;; The indicator for the mode line.
+;;   :lighter "WriRo"
+;;   ;; minor mode keybindings
+;;   :keymap 
+;;   '(([?\C-c ?\C-x ?b] . org-writers-room-tree-to-indirect-buffer)
+;;     )
+;;   ;; 
+;;   :group "org-writers-room"
+;;   :global nil
+;;   (if (eq major-mode 'org-mode)
+;;   (run-hooks 'org-writers-room-hooks ))
+;;     )
 
 ;; make sure that the original buffer gets guide-mode
-(add-hook 'org-writers-room-hooks 'org-wr-guide)
+;; (add-hook 'org-writers-room-hooks 'org-wr-guide)
+
+(defun org-writers-room ()
+  (interactive)
+  (if (eq major-mode 'org-mode)
+      (org-wr-guide 'toggle)
+    ))
 
 (provide 'org-writers-room)
+
