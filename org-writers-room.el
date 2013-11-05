@@ -99,6 +99,7 @@ window.  could be useful for sustaining concentration, but I'm not sure I want t
 (defun org-writers-room-windows ()
   "Trying to figure out how to get a nice windows config for a writers room mode. Uses the window-naming funtions defined above."
   (interactive "")
+  (message "writers room is on: %s" org-writers-room-on)
   (if org-writers-room-on
       ;; the "then" part...
       (progn
@@ -113,7 +114,8 @@ window.  could be useful for sustaining concentration, but I'm not sure I want t
 	  (set-window-name main "main")
 	  (set-window-name metadata "metadata"))
 	(select-window (window-with-name "main"))
-	(setq my-buffer-name-regex (concat (buffer-name) "-") )
+	;; (setq my-buffer-name-regex (concat (buffer-name) "-") )
+	(org-global-cycle 3)
 	(org-writers-room-tree-to-indirect-buffer))
     ;; the "else" part..
       (let ((realpoint nil)
@@ -127,6 +129,7 @@ window.  could be useful for sustaining concentration, but I'm not sure I want t
 	  ;; (pop-to-buffer org-wr-guide-buffer)
 	  (if realpoint
 	      (goto-char realpoint))
+	  (org-flag-heading nil t)
       (if (eq origbuf org-wr-last-meta-buffer)
 	  (org-wr-kill-indirects)
 	(if (buffer-live-p org-wr-last-meta-buffer)
@@ -194,7 +197,13 @@ Interactively with no argument, this command toggles the mode.
   (save-excursion
     (dolist (this-property org-writers-room-properties)
       (org-set-property (car this-property) (cdr this-property))
-    )))
+    )
+    (org-flag-drawer 'nil)
+    (select-window (window-with-name "guide"))
+    (org-cycle-hide-drawers 'all)
+    )
+  
+  )
 
 (defun org-wr-main-property-fns ()
   "adds a hook to org-insert-heading-hook that automatically adds property drawers whenever a heading is created"
@@ -238,8 +247,9 @@ Interactively with no argument, this command toggles the mode.
   (run-hooks 'org-wr-guide-hooks 
 	     )
   )
+
 (define-key org-wr-guide-map (kbd "<return>") 'org-writers-room-tree-to-indirect-buffer) 
-(add-hook 'org-wr-guide 'org-writers-room-windows)
+(add-hook 'org-wr-guide-hooks 'org-writers-room-windows)
 ;; (add-hook 'org-wr-guide-hooks 'org-wr-side-narrow)
 
 
@@ -368,7 +378,12 @@ Org options to go up and down levels are not available, nor are options to displ
 (defun org-writers-room ()
   (interactive)
   (if (eq major-mode 'org-mode)
-      (org-wr-guide 'toggle)
+      (progn
+	(if (and (boundp 'org-writers-room-on) org-writers-room-on)
+	    (setq org-writers-room-on nil)
+	  (setq org-writers-room-on t))
+	(org-wr-guide 'toggle))
+    
     ))
 
 (provide 'org-writers-room)
