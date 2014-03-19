@@ -1,3 +1,4 @@
+(require 'owr-helper)
 (defgroup org-writers-room nil
   "Book & project-writing setup for org-mode"
   :group 'org-writers-room)
@@ -7,10 +8,15 @@
   :group 'org-writers-room
   :type 'number)
 
-(defcustom org-writers-room-properties '(("Synopsis" . "Put a short summary here") ("Role in Book" . "Describe what you want this section to accomplish") ("Characters" . "who is in this section"))
+(defcustom org-writers-room-properties '(("Synopsis" . " ") ("Role in Book" . " ") ("Characters" . " "))
   "alist of properties to be inserted automatically on heading creation"
   :group 'org-writers-room
   :type 'alist)
+
+(defcustom org-writers-room-aggressive   t
+  "boolean -- should owr aggressively keep your attention by closing other buffers?"
+  :group 'org-writers-room
+  :type 'boolean)
 
 ;; ORG-WR-META Mode.  
 ;; Trivial minor mode to display a properties drawer in the metadata window of writers-mode
@@ -41,33 +47,6 @@ Interactively with no argument, this command toggles the mode.
 ;; narrow the buffer automatically to the properties drawer
 (add-hook 'org-wr-meta-hooks 'org-wr-meta-narrow)
 
-(defun org-wr-meta-narrow ()
-  "really just a hook to narrow the buffer to the properties drawer of the active heading"
-  (interactive)
-  (setq pbegin nil)
-  (save-excursion
-    (org-back-to-heading t)
-    (setq pbegin (search-forward-regexp ":PROPERTIES:" nil 1)))
-  (unless pbegin
-    (org-wr-main-heading-hook)
-    (save-excursion 
-      (org-back-to-heading t)
-      ;; (org-wr-meta-narrow)
-      (setq pbegin (search-forward-regexp ":PROPERTIES:" nil 1))
-      ))
-  (save-excursion
-    (org-back-to-heading t)
-    (search-forward-regexp ":END:")
-    (setq end (match-beginning 0)))
-  (narrow-to-region pbegin end)
-  (show-all)
-  )
-
-
-
-(defun set-window-width (n)
-  "Set the selected window's width."
-  (adjust-window-trailing-edge (selected-window) (- n (window-width)) t))
 
 
 ;; I'm not using this one currently
@@ -84,66 +63,7 @@ window.  could be useful for sustaining concentration, but I'm not sure I want t
 
 ;; (global-set-key [pause] 'toggle-current-window-dedication)
 
-;; helper function to hide all drawers in guide-mode
 
-(defun org-hide-drawers ()
-  "Fold all drawers in buffer"
-  (interactive)
-  (save-excursion
-    (goto-char (point-min))
-    (while (re-search-forward org-property-start-re nil 'NOERROR)
-      (org-flag-drawer t)))
-  )
-
-
-(defun org-writers-room-windows ()
-  "Trying to figure out how to get a nice windows config for a writers room mode. Uses the window-naming funtions defined above."
-  (interactive "")
-  (message "writers room is on: %s" org-writers-room-on)
-  (if org-writers-room-on
-      ;; the "then" part...
-      (progn
-	(setq org-wr-last-meta-buffer nil)
-	(setq width org-writers-room-column-width)
-	(global-linum-mode 0)
-	(delete-other-windows)
-	(set-window-dedicated-p (selected-window) t)
-	(let* ((main (split-window nil width t))
-	       (metadata (split-window main (- width) t)))
-	  (set-window-name (selected-window) "guide")
-	  (set-window-name main "main")
-	  (set-window-name metadata "metadata"))
-	(select-window (window-with-name "main"))
-	;; (setq my-buffer-name-regex (concat (buffer-name) "-") )
-	(org-global-cycle 3)
-	(org-writers-room-tree-to-indirect-buffer))
-    ;; the "else" part..
-      (let ((realpoint nil)
-	    (origbuf (current-buffer)))
-	(if (or (eq origbuf org-last-indirect-buffer)
-		(eq origbuf org-wr-last-meta-buffer))
-	    (setq realpoint (point)))
-	  (select-window (window-with-name "guide"))
-	  (delete-other-windows (selected-window))
-	  (set-window-dedicated-p (selected-window) nil)
-	  ;; (pop-to-buffer org-wr-guide-buffer)
-	  (if realpoint
-	      (goto-char realpoint))
-	  (org-flag-heading nil t)
-      (if (eq origbuf org-wr-last-meta-buffer)
-	  (org-wr-kill-indirects)
-	(if (buffer-live-p org-wr-last-meta-buffer)
-	    (kill-buffer  org-wr-last-meta-buffer))
-	(if (and (buffer-live-p org-last-indirect-buffer))
-	    (kill-buffer org-last-indirect-buffer))
-	)))
-)
-(defun org-wr-kill-indirects ()
-  (if (and (buffer-live-p org-last-indirect-buffer))
-      (kill-buffer org-last-indirect-buffer))
-  (if (buffer-live-p org-wr-last-meta-buffer)
-      (kill-buffer  org-wr-last-meta-buffer))
-)	
 	  
 	    
 	     ;; grab the buffer location
@@ -190,6 +110,7 @@ Interactively with no argument, this command toggles the mode.
 ;; would also be nice to completely hid the properties drawer after it's created
 ;; cf hide-show-mode solution here: http://stackoverflow.com/questions/17478260/completely-hide-the-properties-drawer-in-org-mode
 
+
 ;; 
 (defun org-wr-main-heading-hook ()
   "Adds a properties drawer & populates it with several properties.  Intended to be used with org-insert-heading-hook, but is also interactive."
@@ -199,11 +120,12 @@ Interactively with no argument, this command toggles the mode.
       (org-set-property (car this-property) (cdr this-property))
     )
     (org-flag-drawer 'nil)
-    (select-window (window-with-name "guide"))
+    ;; (select-window (window-with-name "guide")
+                   )
     (org-cycle-hide-drawers 'all)
     )
   
-  )
+
 
 (defun org-wr-main-property-fns ()
   "adds a hook to org-insert-heading-hook that automatically adds property drawers whenever a heading is created"
@@ -248,104 +170,12 @@ Interactively with no argument, this command toggles the mode.
 	     )
   )
 
+(define-key org-wr-guide-map [remap org-cycle] 'owr-cycle)
 (define-key org-wr-guide-map (kbd "<return>") 'org-writers-room-tree-to-indirect-buffer) 
 (add-hook 'org-wr-guide-hooks 'org-writers-room-windows)
 ;; (add-hook 'org-wr-guide-hooks 'org-wr-side-narrow)
+(add-hook 'org-wr-guide-hooks 'owr-hide-show-top)
 
-
-;; 3 helper functions to enable us to work with named windows (important)
-;; --------------------------------------------
-(defun set-window-name (window name)
-  (set-window-parameter window 'name name))
-
-(defun window-with-name (name)
-  (window-with-parameter 'name name))
-
-
-(defun display-buffer-in-named-window (buffer &optional name)
-  "Try displaying BUFFER in a window with parameter 'name'.  If name is nil, attempts to save to window named 'main'."
-  (if name
-      nil
-    (setq name "main"))
-  (let ((named-window (window-with-name name)))
-    (when named-window
-      (window--display-buffer
-       buffer named-window 'reuse nil display-buffer-mark-dedicated))))
-
-;; --------------------------------------------
-;; end named windows
-
-;; indirect buffer creation for org-writers-room
-;; stolen from org.el, but had to rewrite to remove cloning
-(defun org-writers-room-get-indirect-buffer (&optional buffer newname )
-  "create an indirect buffer from current bufer, but do not clone"
-  (setq buffer (or buffer (current-buffer)))
-  (let ((n 1) (base (buffer-name buffer)) bname)
-    (while (buffer-live-p
-	    (get-buffer (setq bname (concat base "-" (number-to-string n)))))
-      (setq n (1+ n)))
-    ;; allow buffer name to be set when called
-    ;; this gives more meaningful buffer names in org-writers-room
-    (if newname
-	(setq bname newname)
-      )
-   
-    (condition-case nil
-	;; this is the main diference form org-get-indirect-buffer
-	;; final option 'clone is missing
-        ;; (make-indirect-buffer buffer bname 'clone)
-	(make-indirect-buffer buffer bname )
-      (error (make-indirect-buffer buffer bname)))))
-
-
-;; hacked org-tree-to-indiret-buffer
-;; removes several options, imposing the window structure defined earlier
-;; on the user to create a "writer's room" hopefully free of distractions
-(defun org-writers-room-tree-to-indirect-buffer (&optional  newname)
-  "Create first indirect buffer, ibuf, and narrow it to current subtree.  Then create a second indirect guffer, metabuf.  Display these two buffers windows named 'main' and 'metadata'.  
-Org options to go up and down levels are not available, nor are options to display in a new frame etc. etc.  "
-  (interactive "P")
-  ;; this is the work of figuring out the right window & buffer
-  (let ((cbuf (current-buffer))
-	(cwin (selected-window))
-	(pos (point))
-	beg end level heading ibuf)
-    ;; select the apropriate heading
-    (save-excursion
-      (org-back-to-heading t)
-      (setq beg (point)
-	    heading (org-get-heading))
-      (org-end-of-subtree t t)
-      (if (org-at-heading-p) (backward-char 1))
-      (setq end (point)))
-    ;; kill indirect buffer if it still exists
-    ;; problem for the metadata window creation!!
-    (if (buffer-live-p org-last-indirect-buffer)
-	(kill-buffer org-last-indirect-buffer))
-    (if (buffer-live-p org-wr-last-meta-buffer)
-	(kill-buffer  org-wr-last-meta-buffer))
-    
-    ;; create and display the indirect buffers
-    (setq ibuf (org-writers-room-get-indirect-buffer cbuf heading)
-	  org-last-indirect-buffer ibuf)
-    (setq metabuf (org-writers-room-get-indirect-buffer cbuf (concat heading "-meta") )
-	  org-wr-last-meta-buffer metabuf)
-    (display-buffer-in-named-window metabuf "metadata")
-    (display-buffer-in-named-window ibuf "main")
-    ;; set modes and narrow for ibuf & metabuf
-    (pop-to-buffer ibuf)
-    (narrow-to-region beg end)
-    (org-mode)
-    (org-wr-main)
-    (show-all)
-    (goto-char pos)
-    (run-hook-with-args 'org-cycle-hook 'all)
-    (pop-to-buffer metabuf)
-    (narrow-to-region beg end)
-    (org-mode)
-    (org-wr-meta)
-    (show-all)
-    (and (window-live-p cwin) (select-window cwin))))
 ;; --- END org-wr-guide --------------------------
 
 
@@ -380,11 +210,24 @@ Org options to go up and down levels are not available, nor are options to displ
   (if (eq major-mode 'org-mode)
       (progn
 	(if (and (boundp 'org-writers-room-on) org-writers-room-on)
-	    (setq org-writers-room-on nil)
-	  (setq org-writers-room-on t))
-	(org-wr-guide 'toggle))
-    
+	    (progn
+              (setq org-writers-room-on nil)
+              (if 'org-writers-room-aggressive
+                  (desktop-read))
+              (select-window (window-with-name "guide")
+                             )
+              (org-wr-guide 'toggle)
+              )
+	  (setq org-writers-room-on t)
+          (if 'org-writers-room-aggressive
+              (owr-save-and-close-others))
+          (org-wr-guide 'toggle)
+          )
+        )
     ))
+
+
+
 
 (provide 'org-writers-room)
 
