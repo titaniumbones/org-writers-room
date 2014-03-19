@@ -1,3 +1,6 @@
+#+TODO: TODO  | DONE CANCELED
+
+
 * Org Writer's Room
 Inspired by [[http://www.literatureandlatte.com/scrivener.php][Scrivener]], this experimental, unfinished minor mode hopes to eventually provide an environment in which writers can easily manage large-scale projects (like novels and dissertations) while still living in Emacs & writing in plain-text with [[http://orgmode.org][Org]].  
 
@@ -7,6 +10,7 @@ This is broken software -- you shouldn't expect it to do what it's supposed to d
 ** Requirements
 - Emacs 24
 - a recent org-mode
+- desktop-mode
 
 ** Installation
 Put org-writers-room.el somewhere in your load-path and load it.
@@ -29,18 +33,21 @@ For now, it's assumed that each project lives in just one single file, that migh
   - Thoughts on Mood
     - Pathetic Fallacies
     - why is Dave sad?
-Use regular org-mode commands to move bits of the structure around in the guide.  When you actually want to write, use C-c C-x b on a headline to get that node in the main window.  
+Use regular org-mode commands to move bits of the structure around in the guide.  Note:  [TAB] has been rebound to a custom function that will show ONLY HEADLINES in the guide.  When you actually want to write, press [RETURN] and the appropriate subtree will appear in the main window, while the metadata will be shown in a third window.  Each new subheading will be given a set of new properties (default:  Synopsis, Rule in Book, Characters -- these are probably bad defaults and can be changed with a defcustom, =org-writers-room-properties=).  These properties can be searched using normal org search functions -- =C-c / p= or =C-c / m= -- but I would like to write something better later.  
 
 ** Stuff I want to be able to do!
 Most of the features I want are not yet implemented!  Here are some plans/aspirations I have for this mode:
-- change the visibility cycling in the "guide" buffer so that it's impossible to make node content visible there  cycling should just affect the number of sub-headings visible in a given node.
-- consider suppressing display of  headline tags in the guide, to make view cleaner.  Or just shorten headline text so they never wrap.
-- Somehow make it easy to assign a set of Properties to each headline.  For instance, if this is going to work like Scrivener, each node should have a "Synopsis" property containing a short summary of the node.  It would be great if e.g. every time I created a node in "Novel" a Properties list was automatically created containing drawers for
-  - synopsis
-  - characters
-  - umm, I thought there would be more but I can't think of them.  If it were an academic monograph instead of a novel, you might have quite a number of properties to keep track of.  
-- Implement the metadata window!  I imagine this containing an editor for the properties in the current node; I guess it's an indirect buffer narrowed even further than the indirect buffer in the main window  It would be nice if the property keys could be pre-populated according to a defcustom or a declaration in a headline.
-- Eventually, it would be nice to have some kind of a search interface that makes it easy to find stuff you've lost track of; I guess one could just use C-s for now.
-- In general, the code right now is quite fragile and I think of pretty poor quality.  It should be made, well, better.  
+*** DONE change the visibility cycling in the "guide" buffer so that it's impossible to make node content visible there  cycling should just affect the number of sub-headings visible in a given node.
+*** TODO consider suppressing display of  headline tags in the guide, to make view cleaner.  Or just shorten headline text so they never wrap.
+*** TODO Somehow make it easy to assign a set of Properties to each headline.  
+Right now this is sort of implemented, but the properties are still a pain to edit, even in the metadata window.
+- synopsis
+- characters
+- umm, I thought there would be more but I can't think of them.  If it were an academic monograph instead of a novel, you might have quite a number of properties to keep track of.
+*** TODO Improve the metadata window!  
+Currently it's just a view.  Would be nice to have better editing and other keybindings; would also be nice to use it to show metadata of multiple headlines when searches take place.
+*** TODO Improve searching
+searching right now is awful 
+*** TODO In general, the code right now is quite fragile and I think of pretty poor quality.  It should be made, well, better.
 ** Contributing
 Please, please, please take this code and improve it.  If you're interested in contributing, please fork & push or consider asking for commit access.  I'm not a coder! I just want to be able to use org-mode for everything.   

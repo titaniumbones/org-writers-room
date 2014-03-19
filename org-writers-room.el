@@ -8,7 +8,7 @@
   :group 'org-writers-room
   :type 'number)
 
-(defcustom org-writers-room-properties '(("Synopsis" . " ") ("Role in Book" . " ") ("Characters" . " "))
+(defcustom org-writers-room-properties '(("Synopsis" . "Summary") ("Role in Book" . "Hints") ("Characters" . "chars"))
   "alist of properties to be inserted automatically on heading creation"
   :group 'org-writers-room
   :type 'alist)
@@ -34,9 +34,10 @@ Interactively with no argument, this command toggles the mode.
   ;; The indicator for the mode line.
   :lighter "WR-Meta"
   ;; minor mode keybindings
-  ;; :keymap 
-  ;; '(([?\C-c ?\C-x ?b] . org-wr-guide-pop-buffer)
-  ;;   )
+   :keymap 
+   '(([?\C-c ?\C-x ?g] . owr-goto-guide)
+     ([?\C-c ?\C-x ?m] . owr-goto-main)
+    )
   ;; 
   :group "org-writers-room"
   :global nil
@@ -95,9 +96,10 @@ Interactively with no argument, this command toggles the mode.
   ;; The indicator for the mode line.
   :lighter "WR-Main"
   ;; minor mode keybindings
-  ;; :keymap 
-  ;; '(([?\C-c ?\C-x ?b] . org-wr-guide-pop-buffer)
-  ;;   )
+   :keymap 
+   '(([?\C-c ?\C-x ?g] . owr-goto-guide)
+     ([?\C-c ?\C-x ?m] . owr-goto-meta)
+    )
   ;; 
   :group "org-writers-room"
   :global nil
@@ -162,7 +164,9 @@ Interactively with no argument, this command toggles the mode.
   ;; minor mode keybindings
   :keymap 
   '(([?\C-c ?\C-x ?b] . org-writers-room-tree-to-indirect-buffer)
-   ((kbd "<return>") . org-writers-room-tree-to-indirect-buffer) 
+   ((kbd "<return>") . org-writers-room-tree-to-indirect-buffer)
+   ;; ([?\C-c ?\C-x ?g] . owr-goto-guide)
+   ([?\C-c ?\C-x ?m] . owr-goto-meta)
     )
   :group "org-writers-room"
   :global nil
@@ -170,7 +174,10 @@ Interactively with no argument, this command toggles the mode.
 	     )
   )
 
+;; a bunch of keymappings, somewhat random, ouch
 (define-key org-wr-guide-map [remap org-cycle] 'owr-cycle)
+(define-key org-wr-meta-map [remap org-beginning-of-line] 'owr-beginning-of-line)
+(define-key org-wr-main-map [remap org-beginning-of-line] 'owr-beginning-of-line)
 (define-key org-wr-guide-map (kbd "<return>") 'org-writers-room-tree-to-indirect-buffer) 
 (add-hook 'org-wr-guide-hooks 'org-writers-room-windows)
 ;; (add-hook 'org-wr-guide-hooks 'org-wr-side-narrow)

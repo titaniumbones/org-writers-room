@@ -50,6 +50,7 @@
         )))
   )
 
+
 ;; ** 3 helper functions to enable us to work with named windows (important)
 ;; --------------------------------------------
 
@@ -64,7 +65,7 @@
 
 (defun display-buffer-in-named-window (buffer &optional name)
   "Try displaying BUFFER in a window with parameter 'name'.
-  If name is nil, attempts to save to window named 'main'."
+  If name is nil, attempts to display in window named 'main'."
   (if name
       nil
     (setq name "main"))
@@ -73,6 +74,25 @@
       (window--display-buffer
        buffer named-window 'reuse nil display-buffer-mark-dedicated))))
 
+
+;; ** and now three functions to bind keys to
+(defun owr-goto-guide ( )
+  (interactive )
+  (select-window (window-with-name "guide")))
+
+(defun owr-goto-window ( wname )
+  (interactive "s  Goto Window: " )
+  (unless (boundp 'wname)
+    (setq wname "guide"))
+  (print wname)
+  (select-window (window-with-name 'wname )))
+(defun owr-goto-main ( )
+  (interactive )
+  (select-window (window-with-name "main")))
+
+(defun owr-goto-meta ( )
+  (interactive )
+  (select-window (window-with-name "metadata")))
 ;; --------------------------------------------
 ;; end named windows
 
@@ -528,7 +548,7 @@ in special contexts.
   (goto-char (org-element-property :contents-end (org-element-at-point)))
   )
 
-(defun org-cycle-internal-global ()
+(defun owr-cycle-internal-global ()
   "Do the global cycling action."
   ;; Hack to avoid display of messages for .org  attachments in Gnus
   (let ((ga (string-match "\\*fontification" (buffer-name))))
@@ -561,128 +581,128 @@ in special contexts.
       (setq org-cycle-global-status 'overview)
       (run-hook-with-args 'org-cycle-hook 'overview)))))
 
-(defun org-cycle-internal-local ()
-  "Do the local cycling action."
-  (interactive)
-  (let ((goal-column 0) eoh eol eos has-children children-skipped struct)
-    ;; First, determine end of headline (EOH), end of subtree or item
-    ;; (EOS), and if item or heading has children (HAS-CHILDREN).
-    (save-excursion
-      (if (org-at-item-p)
-          (progn
-            (beginning-of-line)
-            (setq struct (org-list-struct))
-            (setq eoh (point-at-eol))
-            (setq eos (org-list-get-item-end-before-blank (point) struct))
-            (setq has-children (org-list-has-child-p (point) struct)))
-        (org-back-to-heading)
-        (setq eoh (save-excursion (outline-end-of-heading) (point)))
-        (setq eos (save-excursion (1- (org-end-of-subtree t t))))
-        (setq has-children
-              (or (save-excursion
-                    (let ((level (funcall outline-level)))
-                      (outline-next-heading)
-                      (and (org-at-heading-p t)
-                           (> (funcall outline-level) level))))
-                  (save-excursion
-                    (org-list-search-forward (org-item-beginning-re) eos t)))))
-      ;; Determine end invisible part of buffer (EOL)
-      (beginning-of-line 2)
-      ;; XEmacs doesn't have `next-single-char-property-change'
-      (if (featurep 'xemacs)
-          (while (and (not (eobp)) ;; this is like `next-line'
-                      (get-char-property (1- (point)) 'invisible))
-            (beginning-of-line 2))
-        (while (and (not (eobp)) ;; this is like `next-line'
-                    (get-char-property (1- (point)) 'invisible))
-          (goto-char (next-single-char-property-change (point) 'invisible))
-          (and (eolp) (beginning-of-line 2))))
-      (setq eol (point)))
-    ;; Find out what to do next and set `this-command'
-    (cond
-     ;; This is an empty heading, so nothing to do
-     ((= eos eoh)
-      ;; Nothing is hidden behind this heading
-      (unless (org-before-first-heading-p)
-        (run-hook-with-args 'org-pre-cycle-hook 'empty))
-      (org-unlogged-message "EMPTY ENTRY")
-      (setq org-cycle-subtree-status nil)
-      (save-excursion
-        (goto-char eos)
-        (outline-next-heading)
-        (if (outline-invisible-p) (org-flag-heading nil))))
-     ((and (or (>= eol eos)
-               (not (string-match "\\S-" (buffer-substring eol eos))))
-           (or has-children
-               (not (setq children-skipped
-                          org-cycle-skip-children-state-if-no-children))))
+;; (defun org-cycle-internal-local ()
+;;   "Do the local cycling action."
+;;   (interactive)
+;;   (let ((goal-column 0) eoh eol eos has-children children-skipped struct)
+;;     ;; First, determine end of headline (EOH), end of subtree or item
+;;     ;; (EOS), and if item or heading has children (HAS-CHILDREN).
+;;     (save-excursion
+;;       (if (org-at-item-p)
+;;           (progn
+;;             (beginning-of-line)
+;;             (setq struct (org-list-struct))
+;;             (setq eoh (point-at-eol))
+;;             (setq eos (org-list-get-item-end-before-blank (point) struct))
+;;             (setq has-children (org-list-has-child-p (point) struct)))
+;;         (org-back-to-heading)
+;;         (setq eoh (save-excursion (outline-end-of-heading) (point)))
+;;         (setq eos (save-excursion (1- (org-end-of-subtree t t))))
+;;         (setq has-children
+;;               (or (save-excursion
+;;                     (let ((level (funcall outline-level)))
+;;                       (outline-next-heading)
+;;                       (and (org-at-heading-p t)
+;;                            (> (funcall outline-level) level))))
+;;                   (save-excursion
+;;                     (org-list-search-forward (org-item-beginning-re) eos t)))))
+;;       ;; Determine end invisible part of buffer (EOL)
+;;       (beginning-of-line 2)
+;;       ;; XEmacs doesn't have `next-single-char-property-change'
+;;       (if (featurep 'xemacs)
+;;           (while (and (not (eobp)) ;; this is like `next-line'
+;;                       (get-char-property (1- (point)) 'invisible))
+;;             (beginning-of-line 2))
+;;         (while (and (not (eobp)) ;; this is like `next-line'
+;;                     (get-char-property (1- (point)) 'invisible))
+;;           (goto-char (next-single-char-property-change (point) 'invisible))
+;;           (and (eolp) (beginning-of-line 2))))
+;;       (setq eol (point)))
+;;     ;; Find out what to do next and set `this-command'
+;;     (cond
+;;      ;; This is an empty heading, so nothing to do
+;;      ((= eos eoh)
+;;       ;; Nothing is hidden behind this heading
+;;       (unless (org-before-first-heading-p)
+;;         (run-hook-with-args 'org-pre-cycle-hook 'empty))
+;;       (org-unlogged-message "EMPTY ENTRY")
+;;       (setq org-cycle-subtree-status nil)
+;;       (save-excursion
+;;         (goto-char eos)
+;;         (outline-next-heading)
+;;         (if (outline-invisible-p) (org-flag-heading nil))))
+;;      ((and (or (>= eol eos)
+;;                (not (string-match "\\S-" (buffer-substring eol eos))))
+;;            (or has-children
+;;                (not (setq children-skipped
+;;                           org-cycle-skip-children-state-if-no-children))))
 
-      ;; Entire subtree is hidden in one line: switch to children view
-      (unless (org-before-first-heading-p)
-        (run-hook-with-args 'org-pre-cycle-hook 'children))
-      (if (org-at-item-p)
-          (org-list-set-item-visibility (point-at-bol) struct 'children)
-        ;; (org-show-entry)
-        (org-with-limited-levels (show-children))
-        ;; FIXME: This slows down the func way too much.
-        ;; How keep drawers hidden in subtree anyway?
-        ;; (when (memq 'org-cycle-hide-drawers org-cycle-hook)
-        ;;   (org-cycle-hide-drawers 'subtree))
+;;       ;; Entire subtree is hidden in one line: switch to children view
+;;       (unless (org-before-first-heading-p)
+;;         (run-hook-with-args 'org-pre-cycle-hook 'children))
+;;       (if (org-at-item-p)
+;;           (org-list-set-item-visibility (point-at-bol) struct 'children)
+;;         ;; (org-show-entry)
+;;         (org-with-limited-levels (show-children))
+;;         ;; FIXME: This slows down the func way too much.
+;;         ;; How keep drawers hidden in subtree anyway?
+;;         ;; (when (memq 'org-cycle-hide-drawers org-cycle-hook)
+;;         ;;   (org-cycle-hide-drawers 'subtree))
 
-        ;; Fold every list in subtree to top-level items.
-        (when (eq org-cycle-include-plain-lists 'integrate)
-          (save-excursion
-            (org-back-to-heading)
-            (while (org-list-search-forward (org-item-beginning-re) eos t)
-              (beginning-of-line 1)
-              (let* ((struct (org-list-struct))
-                     (prevs (org-list-prevs-alist struct))
-                     (end (org-list-get-bottom-point struct)))
-                (mapc (lambda (e) (org-list-set-item-visibility e struct 'folded))
-                      (org-list-get-all-items (point) struct prevs))
-                (goto-char (if (< end eos) end eos)))))))
-      (org-unlogged-message "CHILDREN")
-      (save-excursion
-        (goto-char eos)
-        (outline-next-heading)
-        (if (outline-invisible-p) (org-flag-heading nil)))
-      (setq org-cycle-subtree-status 'children)
-      (unless (org-before-first-heading-p)
-        (run-hook-with-args 'org-cycle-hook 'children)))
+;;         ;; Fold every list in subtree to top-level items.
+;;         (when (eq org-cycle-include-plain-lists 'integrate)
+;;           (save-excursion
+;;             (org-back-to-heading)
+;;             (while (org-list-search-forward (org-item-beginning-re) eos t)
+;;               (beginning-of-line 1)
+;;               (let* ((struct (org-list-struct))
+;;                      (prevs (org-list-prevs-alist struct))
+;;                      (end (org-list-get-bottom-point struct)))
+;;                 (mapc (lambda (e) (org-list-set-item-visibility e struct 'folded))
+;;                       (org-list-get-all-items (point) struct prevs))
+;;                 (goto-char (if (< end eos) end eos)))))))
+;;       (org-unlogged-message "CHILDREN")
+;;       (save-excursion
+;;         (goto-char eos)
+;;         (outline-next-heading)
+;;         (if (outline-invisible-p) (org-flag-heading nil)))
+;;       (setq org-cycle-subtree-status 'children)
+;;       (unless (org-before-first-heading-p)
+;;         (run-hook-with-args 'org-cycle-hook 'children)))
 
-     ;; show descendants
-     (;;(and (eq last-command 'this-command))
-      (eq org-cycle-subtree-status 'children)
-      (message "TRYING GRANDCHILDREN")
-      ;; We just showed the children, or no children are there,
-      ;; now show descendants if there are any, and subtree if there aren't
-      (let ((has-grandchildren nil))
-        (save-excursion
-          (let ((level (funcall outline-level)))
-            (while (> eos (point))
-              (outline-next-heading)
-              (if  (and (org-at-heading-p t)
-                        (> (funcall outline-level) level))
-                  (setq has-grandchildren t)))))
-        (print has-grandchildren)
-        (if 'has-grandchildren
-            (progn
-              (message "HAS GRANDCHILDREN")
-              (unless (org-before-first-heading-p)
-                (run-hook-with-args 'org-pre-cycle-hook 'descendants))
-              ;; (outline-flag-region eoh eos nil)
-              (show-branches)
-              (org-unlogged-message "DESCENDANTS")
-              (setq org-cycle-subtree-status 'descendants)
-              (unless (org-before-first-heading-p)
-                (run-hook-with-args 'org-cycle-hook 'descendants)))
-          (message "DOES NOT HAVE GRANDCHILDREN")
-          (run-hook-with-args 'org-pre-cycle-hook 'folded)
-          (outline-flag-region eoh eos t)
-          (org-unlogged-message "FOLDED")
-          (setq org-cycle-subtree-status 'folded)
-          ))
-      )
+;;      ;; show descendants
+;;      (;;(and (eq last-command 'this-command))
+;;       (eq org-cycle-subtree-status 'children)
+;;       (message "TRYING GRANDCHILDREN")
+;;       ;; We just showed the children, or no children are there,
+;;       ;; now show descendants if there are any, and subtree if there aren't
+;;       (let ((has-grandchildren nil))
+;;         (save-excursion
+;;           (let ((level (funcall outline-level)))
+;;             (while (> eos (point))
+;;               (outline-next-heading)
+;;               (if  (and (org-at-heading-p t)
+;;                         (> (funcall outline-level) level))
+;;                   (setq has-grandchildren t)))))
+;;         (print has-grandchildren)
+;;         (if 'has-grandchildren
+;;             (progn
+;;               (message "HAS GRANDCHILDREN")
+;;               (unless (org-before-first-heading-p)
+;;                 (run-hook-with-args 'org-pre-cycle-hook 'descendants))
+;;               ;; (outline-flag-region eoh eos nil)
+;;               (show-branches)
+;;               (org-unlogged-message "DESCENDANTS")
+;;               (setq org-cycle-subtree-status 'descendants)
+;;               (unless (org-before-first-heading-p)
+;;                 (run-hook-with-args 'org-cycle-hook 'descendants)))
+;;           (message "DOES NOT HAVE GRANDCHILDREN")
+;;           (run-hook-with-args 'org-pre-cycle-hook 'folded)
+;;           (outline-flag-region eoh eos t)
+;;           (org-unlogged-message "FOLDED")
+;;           (setq org-cycle-subtree-status 'folded)
+;;           ))
+;;       )
 
      ;; all other options exhausted, show full subtree
      ;; ((or children-skipped
@@ -712,15 +732,15 @@ in special contexts.
      ;;  (setq org-cycle-subtree-status 'subtree)
      ;;  (unless (org-before-first-heading-p)
      ;;    (run-hook-with-args 'org-cycle-hook 'subtree)))
-     (t
-      (message "no conditions met")
-      ;; Default action: hide the subtree.
-      (run-hook-with-args 'org-pre-cycle-hook 'folded)
-      (outline-flag-region eoh eos t)
-      (org-unlogged-message "FOLDED")
-      (setq org-cycle-subtree-status 'folded)
-      (unless (org-before-first-heading-p)
-        (run-hook-with-args 'org-cycle-hook 'folded))))))
+     ;; (t
+     ;;  (message "no conditions met")
+     ;;  ;; Default action: hide the subtree.
+     ;;  (run-hook-with-args 'org-pre-cycle-hook 'folded)
+     ;;  (outline-flag-region eoh eos t)
+     ;;  (org-unlogged-message "FOLDED")
+     ;;  (setq org-cycle-subtree-status 'folded)
+     ;;  (unless (org-before-first-heading-p)
+     ;;    (run-hook-with-args 'org-cycle-hook 'folded))))))
 
 ;; ** Part 5: Hacked indirect buffer functions
 
@@ -789,30 +809,30 @@ Org options to go up and down levels are not available, nor are options to displ
 
 * Ch 1
 :PROPERTIES:
-:Synopsis: 
-:Role in Book: 
-:Characters: 
+:Synopsis: summary
+:Role in Book: hint
+:Characters: char
 :END:
 
 * Ch 2
 :PROPERTIES:
-:Synopsis: 
-:Role in Book: 
-:Characters: 
+:Synopsis: summary
+:Role in Book: hint
+:Characters: char
 :END:
 
 * Ch 3
 :PROPERTIES:
-:Synopsis: 
-:Role in Book: 
-:Characters: 
+:Synopsis: summary
+:Role in Book: hint
+:Characters: char
 :END:
 
 * Ch 4
 :PROPERTIES:
-:Synopsis: 
-:Role in Book: 
-:Characters: 
+:Synopsis: summary
+:Role in Book: hint
+:Characters: char
 :END:
 
 * Working Notes
@@ -878,6 +898,138 @@ Org options to go up and down levels are not available, nor are options to displ
   ;;          ", ")
   ;;         (or (plist-get (cdr owr-blog) :default-title)
   ;;             owr-default-title))
-  )
+
+)
+
+(defun owr-beginning-of-line (&optional arg)
+  "Go to the beginning of the current line.  If that is invisible, continue
+to a visible line beginning.  This makes the function of C-a more intuitive.
+If this is a headline, and `org-special-ctrl-a/e' is set, ignore tags on the
+first attempt, and only move to after the tags when the cursor is already
+beyond the end of the headline."
+  (interactive "P")
+  (let ((pos (point))
+        (special (if (consp org-special-ctrl-a/e)
+                     (car org-special-ctrl-a/e)
+                   org-special-ctrl-a/e))
+        deactivate-mark	refpos)
+    (if (org-bound-and-true-p visual-line-mode)
+        (beginning-of-visual-line 1)
+      (beginning-of-line 1))
+    (if (and arg (fboundp 'move-beginning-of-line))
+        (call-interactively 'move-beginning-of-line)
+      (if (bobp)
+          nil
+        (backward-char 1)
+        (if (org-truely-invisible-p)
+            (while (and (not (bobp)) (org-truely-invisible-p))
+              (backward-char 1)
+              (beginning-of-line 1))
+          (forward-char 1))))
+    (when special
+      (message "special is set")
+      (print (org-element-at-point))
+      ;; (message "org-at-property-p reports ")
+      ;; (print (org-at-property-p))
+      (cond
+       ((and (looking-at org-complex-heading-regexp)
+             (= (char-after (match-end 1)) ?\ ))
+        (setq refpos (min (1+ (or (match-end 3) (match-end 2) (match-end 1)))
+                          (point-at-eol)))
+        (goto-char
+         (if (eq special t)
+             (cond ((> pos refpos) refpos)
+                   ((= pos (point)) refpos)
+                   (t (point)))
+           (cond ((> pos (point)) (point))
+                 ((not (eq last-command this-command)) (point))
+                 (t refpos)))))
+       ((org-at-property-p)
+        (message "is a property")
+        (when (looking-at org-property-re)
+          (message "looking at property re")
+          (let ((after-keyword (+ 1  (match-end 1))))
+            (print after-keyword)
+            (print (point))
+            (goto-char after-keyword)
+            (if (eq special t)
+                (goto-char after-keyword)
+              (if (or (= (point) pos) (> (+ 1 (point)) after-keyword))
+                  ;; (and (= (point) pos) (eq last-command this-command))
+                  (goto-char after-keyword)
+                (goto-char pos))))
+          ;; (search-forward ":")
+          ;; (search-forward ":")
+          ;; (forward-char 1))
+          ))
+       ((org-at-item-p)
+        ;; Being at an item and not looking at an the item means point
+        ;; was previously moved to beginning of a visual line, which
+        ;; doesn't contain the item.  Therefore, do nothing special,
+        ;; just stay here.
+        (when (looking-at org-list-full-item-re)
+          ;; Set special position at first white space character after
+          ;; bullet, and check-box, if any.
+          (let ((after-bullet
+                 (let ((box (match-end 3)))
+                   (if (not box) (match-end 1)
+                     (let ((after (char-after box)))
+                       (if (and after (= after ? )) (1+ box) box))))))
+            ;; Special case: Move point to special position when
+            ;; currently after it or at beginning of line.
+            (if (eq special t)
+                (when (or (> pos after-bullet) (= (point) pos))
+                  (goto-char after-bullet))
+              ;; Reversed case: Move point to special position when
+              ;; point was already at beginning of line and command is
+              ;; repeated.
+              (when (and (= (point) pos) (eq last-command this-command))
+                (goto-char after-bullet))))))))
+    (org-no-warnings
+     (and (featurep 'xemacs) (setq zmacs-region-stays t))))
+  (setq disable-point-adjustment
+        (or (not (invisible-p (point)))
+            (not (invisible-p (max (point-min) (1- (point))))))))
+
+(defun org-end-of-line (&optional arg)
+  "Go to the end of the line.
+If this is a headline, and `org-special-ctrl-a/e' is set, ignore
+tags on the first attempt, and only move to after the tags when
+the cursor is already beyond the end of the headline."
+  (interactive "P")
+  (let ((special (if (consp org-special-ctrl-a/e) (cdr org-special-ctrl-a/e)
+                   org-special-ctrl-a/e))
+        (move-fun (cond ((org-bound-and-true-p visual-line-mode)
+                         'end-of-visual-line)
+                        ((fboundp 'move-end-of-line) 'move-end-of-line)
+                        (t 'end-of-line)))
+        deactivate-mark)
+    (if (or (not special) arg) (call-interactively move-fun)
+      (let* ((element (save-excursion (beginning-of-line)
+                                      (org-element-at-point)))
+             (type (org-element-type element)))
+        (cond
+         ((memq type '(headline inlinetask))
+          (let ((pos (point)))
+            (beginning-of-line 1)
+            (if (looking-at (org-re ".*?\\(?:\\([ \t]*\\)\\(:[[:alnum:]_@#%:]+:\\)?[ \t]*\\)?$"))
+                (if (eq special t)
+                    (if (or (< pos (match-beginning 1)) (= pos (match-end 0)))
+                        (goto-char (match-beginning 1))
+                      (goto-char (match-end 0)))
+                  (if (or (< pos (match-end 0))
+                          (not (eq this-command last-command)))
+                      (goto-char (match-end 0))
+                    (goto-char (match-beginning 1))))
+              (call-interactively move-fun))))
+         ((outline-invisible-p (line-end-position))
+          ;; If element is hidden, `move-end-of-line' would put point
+          ;; after it.  Use `end-of-line' to stay on current line.
+          (call-interactively 'end-of-line))
+         (t (call-interactively move-fun)))))
+    (org-no-warnings (and (featurep 'xemacs) (setq zmacs-region-stays t))))
+  (setq disable-point-adjustment
+        (or (not (invisible-p (point)))
+            (not (invisible-p (max (point-min) (1- (point))))))))
 
 (provide 'owr-helper)
